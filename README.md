@@ -1,13 +1,13 @@
 # pibooth-forget-button
 
-Plugin pour [pibooth](https://github.com/pibooth/pibooth) ajoutant un troisième bouton pour "oublier" les photos.
+Plugin for [pibooth](https://github.com/pibooth/pibooth) adding a third button to "forget" photos.
 
-## Fonctionnalités
+## Features
 
-- Bouton GPIO dédié pour déplacer les photos vers un dossier "forget"
-- LED indicatrice qui clignote pendant l'état d'impression
-- Affiche "Photo oubliée !" à l'écran quand une photo est oubliée
-- Fonctionne pendant l'état d'impression et l'état d'attente
+- Dedicated GPIO button to move photos to a "forget" folder
+- LED indicator that blinks during print state
+- Displays "Photo oubliee !" on screen when a photo is forgotten
+- Works during both print and wait states
 
 ## Installation
 
@@ -17,26 +17,26 @@ pip install pibooth-forget-button
 
 ## Configuration
 
-Dans le fichier `~/.config/pibooth/pibooth.cfg`, ajoutez :
+In the file `~/.config/pibooth/pibooth.cfg`, add:
 
 ```ini
 [FORGET_BUTTON]
-# Pin GPIO IN pour le bouton (numérotation BOARD, 0 pour désactiver)
+# GPIO IN pin for the button (BOARD numbering, 0 to disable)
 forget_btn_pin = 36
 
-# Pin GPIO OUT pour la LED (0 pour désactiver)
+# GPIO OUT pin for the LED (0 to disable)
 forget_led_pin = 37
 
-# Durée de pression du bouton en secondes
+# Button press duration in seconds
 debounce_delay = 0.3
 ```
 
-## Utilisation
+## Usage
 
-1. Prenez une photo avec pibooth
-2. Pendant l'écran d'impression (quand la LED clignote), appuyez sur le bouton forget
-3. La photo sera déplacée vers le sous-dossier `forget/` et le message "Photo oubliée !" s'affichera
+1. Take a photo with pibooth
+2. During the print screen (when the LED blinks), press the forget button
+3. The photo will be moved to the `forget/` subfolder and "Photo oubliee !" message will be displayed
 
-## Licence
+## License
 
 MIT
