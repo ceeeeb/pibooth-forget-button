@@ -10,12 +10,11 @@ import os
 import os.path as osp
 
 import pygame
-from gpiozero import Button
 
 import pibooth
 from pibooth.utils import LOGGER
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 # Custom event for forget button
 BUTTON_FORGET_EVENT = pygame.USEREVENT + 10
@@ -40,20 +39,18 @@ def pibooth_configure(cfg):
 @pibooth.hookimpl
 def pibooth_startup(app, cfg):
     """Initialize the forget button."""
-    pin = cfg.get('FORGET_BUTTON', 'forget_btn_pin')
+    pin = cfg.getint('FORGET_BUTTON', 'forget_btn_pin')
 
-    if pin == '0' or pin == 0:
+    if not pin:
         LOGGER.info("Forget button plugin: disabled (pin = 0)")
         app.forget_button = None
         return
 
     try:
         debounce = cfg.getfloat('FORGET_BUTTON', 'debounce_delay')
-        app.forget_button = Button(
-            "BOARD" + str(pin),
-            hold_time=debounce,
-            pull_up=True
-        )
+        # app.board knows which GPIO backend the running machine needs, the pin
+        # stays the physical one whatever the board.
+        app.forget_button = app.board.create_button(pin, hold_time=debounce)
 
         def on_forget_held():
             """Called when forget button is held."""
@@ -63,14 +60,13 @@ def pibooth_startup(app, cfg):
 
         app.forget_button.when_held = on_forget_held
 
-        LOGGER.info("Forget button initialized on GPIO pin BOARD%s", pin)
+        LOGGER.info("Forget button initialized on pin %s", pin)
 
         # Initialize LED if configured
-        led_pin = cfg.get('FORGET_BUTTON', 'forget_led_pin')
-        if led_pin != '0' and led_pin != 0:
-            from gpiozero import LED
-            app.forget_led = LED("BOARD" + str(led_pin))
-            LOGGER.info("Forget LED initialized on GPIO pin BOARD%s", led_pin)
+        led_pin = cfg.getint('FORGET_BUTTON', 'forget_led_pin')
+        if led_pin:
+            app.forget_led = app.board.create_led(led_pin)
+            LOGGER.info("Forget LED initialized on pin %s", led_pin)
         else:
             app.forget_led = None
 
@@ -192,7 +188,7 @@ def state_wait_do(cfg, app, events):
 
         # Flash LED if available
         if hasattr(app, 'forget_led') and app.forget_led:
-            app.forget_led.blink(on_time=0.1, n=3, background=True)
+            app.forget_led.blink(on_time=0.1, n=3)
 
         # Move picture to forget folder
         for savedir in cfg.gettuple('GENERAL', 'directory', 'path'):
