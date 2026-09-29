@@ -40,3 +40,10 @@ debounce_delay = 0.3
 ## License
 
 MIT
+
+## Boards
+
+The plugin drives its button and its LED through `app.board`, the GPIO layer of
+[pibooth-ceeeeb](https://github.com/ceeeeb/pibooth), so it works on a Raspberry
+Pi and on any board exposing its GPIO through `/dev/gpiochipN`, a Khadas VIM4
+for instance. Pin numbers stay the physical ones of the 40 pins header.
