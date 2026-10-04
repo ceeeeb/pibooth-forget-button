@@ -137,8 +137,8 @@ def state_print_exit(app):
 
 
 def forget_previous_picture(cfg, app):
-    """Move the previous picture to the forget folder of each save directory
-    and stop showing it."""
+    """Move the previous picture to the forget folder of each save directory,
+    stop showing it and prevent printing it."""
     for savedir in cfg.gettuple('GENERAL', 'directory', 'path'):
         forgetdir = osp.join(savedir, "forget")
         if not osp.isdir(forgetdir):
@@ -157,6 +157,8 @@ def forget_previous_picture(cfg, app):
     app.previous_animated = None
     app.previous_picture_file = None
 
+    app.count.remaining_duplicates = 0
+
 
 @pibooth.hookimpl
 def state_print_do(cfg, app, win, events):
@@ -172,9 +174,6 @@ def state_print_do(cfg, app, win, events):
             app.forget_led.off()
 
         forget_previous_picture(cfg, app)
-
-        # Prevent printing
-        app.count.remaining_duplicates = 0
 
         # Display "Photo oubliée!" message
         _show_forget_message(win)
@@ -194,3 +193,13 @@ def state_wait_do(cfg, app, events):
             app.forget_led.blink(on_time=0.1, n=3)
 
         forget_previous_picture(cfg, app)
+        # Draw the wait screen and set the LEDs again, without the picture
+        app.forget_redraw = True
+
+
+@pibooth.hookimpl
+def state_wait_validate(app):
+    """Enter the wait state again once the previous picture is forgotten."""
+    if getattr(app, 'forget_redraw', False):
+        app.forget_redraw = False
+        return 'wait'

@@ -50,6 +50,14 @@ def test_wait_screen_forgets_the_previous_picture(cfg, app, savedir):
     plugin.state_wait_do(cfg, app, press())
 
     assert_forgotten(app, savedir)
+    assert app.count.remaining_duplicates == 0  # The print LED and icon go off
+
+
+def test_wait_screen_is_drawn_again_once(cfg, app):
+    plugin.state_wait_do(cfg, app, press())
+
+    assert plugin.state_wait_validate(app) == 'wait'
+    assert plugin.state_wait_validate(app) is None
 
 
 def test_print_screen_forgets_the_picture_and_prevents_printing(cfg, app, savedir):
