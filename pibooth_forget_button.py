@@ -14,7 +14,7 @@ import pygame
 import pibooth
 from pibooth.utils import LOGGER
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 # Custom event for forget button
 BUTTON_FORGET_EVENT = pygame.USEREVENT + 10
