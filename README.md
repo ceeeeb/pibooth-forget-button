@@ -5,9 +5,9 @@ Plugin for [pibooth](https://github.com/pibooth/pibooth) adding a third button t
 ## Features
 
 - Dedicated GPIO button to move photos to a "forget" folder
-- LED indicator that blinks during print state
+- LED indicator that blinks while the last photo can be forgotten
 - Displays "Photo oubliee !" on screen when a photo is forgotten
-- Works during both print and wait states
+- Works during both print and wait states: a forgotten photo can no longer be printed
 
 ## Installation
 
@@ -34,8 +34,11 @@ debounce_delay = 0.3
 ## Usage
 
 1. Take a photo with pibooth
-2. During the print screen (when the LED blinks), press the forget button
-3. The photo will be moved to the `forget/` subfolder and "Photo oubliee !" message will be displayed
+2. On the print or wait screen (when the LED blinks), hold the forget button
+   for `debounce_delay` seconds
+3. The photo is moved to the `forget/` subfolder, "Photo oubliee !" is
+   displayed, then the wait screen comes back without the photo and the print
+   LED goes off
 
 ## License
 
