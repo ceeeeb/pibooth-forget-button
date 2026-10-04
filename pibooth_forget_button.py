@@ -121,6 +121,23 @@ def _show_forget_message(win):
 
 
 @pibooth.hookimpl
+def state_wait_enter(app):
+    """Blink the forget LED while the previous picture can be forgotten."""
+    if not getattr(app, 'forget_led', None):
+        return
+    if app.previous_picture_file:
+        app.forget_led.blink(on_time=0.5, off_time=0.5)
+    else:
+        app.forget_led.off()
+
+
+@pibooth.hookimpl
+def state_wait_exit(app):
+    if getattr(app, 'forget_led', None):
+        app.forget_led.off()
+
+
+@pibooth.hookimpl
 def state_print_enter(app):
     """Turn on forget LED when entering print state."""
     if hasattr(app, 'forget_led') and app.forget_led:

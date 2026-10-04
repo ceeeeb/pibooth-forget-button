@@ -91,3 +91,35 @@ def test_nothing_happens_without_a_picture(cfg, app, savedir):
 
     assert (savedir / PICTURE).exists()
     assert app.count.forgotten == 0
+
+
+class FakeLed(object):
+
+    def __init__(self):
+        self.state = 'off'
+
+    def blink(self, on_time=1, off_time=1, n=None):
+        self.state = 'blinking'
+
+    def off(self):
+        self.state = 'off'
+
+
+def test_forget_led_blinks_on_the_wait_screen_while_a_picture_exists(app):
+    app.forget_led = FakeLed()
+
+    plugin.state_wait_enter(app)
+    assert app.forget_led.state == 'blinking'
+
+    plugin.state_wait_exit(app)
+    assert app.forget_led.state == 'off'
+
+
+def test_forget_led_is_off_on_the_wait_screen_without_picture(app):
+    app.forget_led = FakeLed()
+    app.forget_led.state = 'blinking'
+    app.previous_picture_file = None
+
+    plugin.state_wait_enter(app)
+
+    assert app.forget_led.state == 'off'
