@@ -14,7 +14,7 @@ import pygame
 import pibooth
 from pibooth.utils import LOGGER
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 # Custom event for forget button
 BUTTON_FORGET_EVENT = pygame.USEREVENT + 10
@@ -121,6 +121,23 @@ def _show_forget_message(win):
 
 
 @pibooth.hookimpl
+def state_wait_enter(app):
+    """Blink the forget LED while the previous picture can be forgotten."""
+    if not getattr(app, 'forget_led', None):
+        return
+    if app.previous_picture_file:
+        app.forget_led.blink(on_time=0.5, off_time=0.5)
+    else:
+        app.forget_led.off()
+
+
+@pibooth.hookimpl
+def state_wait_exit(app):
+    if getattr(app, 'forget_led', None):
+        app.forget_led.off()
+
+
+@pibooth.hookimpl
 def state_print_enter(app):
     """Turn on forget LED when entering print state."""
     if hasattr(app, 'forget_led') and app.forget_led:
@@ -136,6 +153,30 @@ def state_print_exit(app):
         LOGGER.debug("Forget LED off")
 
 
+def forget_previous_picture(cfg, app):
+    """Move the previous picture to the forget folder of each save directory,
+    stop showing it and prevent printing it."""
+    for savedir in cfg.gettuple('GENERAL', 'directory', 'path'):
+        forgetdir = osp.join(savedir, "forget")
+        if not osp.isdir(forgetdir):
+            os.makedirs(forgetdir)
+
+        src = osp.join(savedir, osp.basename(app.previous_picture_file))
+        dst = osp.join(forgetdir, osp.basename(app.previous_picture_file))
+
+        if osp.exists(src):
+            os.rename(src, dst)
+            LOGGER.info("Moved %s to forget folder", osp.basename(src))
+
+    app.count.forgotten += 1
+
+    app.previous_picture = None
+    app.previous_animated = None
+    app.previous_picture_file = None
+
+    app.count.remaining_duplicates = 0
+
+
 @pibooth.hookimpl
 def state_print_do(cfg, app, win, events):
     """Handle forget button press during print state."""
@@ -149,36 +190,14 @@ def state_print_do(cfg, app, win, events):
         if hasattr(app, 'forget_led') and app.forget_led:
             app.forget_led.off()
 
-        # Move picture to forget folder
-        for savedir in cfg.gettuple('GENERAL', 'directory', 'path'):
-            forgetdir = osp.join(savedir, "forget")
-            if not osp.isdir(forgetdir):
-                os.makedirs(forgetdir)
-
-            src = osp.join(savedir, osp.basename(app.previous_picture_file))
-            dst = osp.join(forgetdir, osp.basename(app.previous_picture_file))
-
-            if osp.exists(src):
-                os.rename(src, dst)
-                LOGGER.info("Moved %s to forget folder", osp.basename(src))
-
-        # Update counters
-        app.count.forgotten += 1
-
-        # Clear the picture
-        app.previous_picture = None
-        app.previous_animated = None
-        app.previous_picture_file = None
-
-        # Prevent printing
-        app.count.remaining_duplicates = 0
+        forget_previous_picture(cfg, app)
 
         # Display "Photo oubliée!" message
         _show_forget_message(win)
 
 
 @pibooth.hookimpl
-def state_wait_do(cfg, app, events):
+def state_wait_do(cfg, app, win, events):
     """Handle forget button press during wait state (to delete previous photo)."""
     if not hasattr(app, 'forget_button') or not app.forget_button:
         return
@@ -190,23 +209,15 @@ def state_wait_do(cfg, app, events):
         if hasattr(app, 'forget_led') and app.forget_led:
             app.forget_led.blink(on_time=0.1, n=3)
 
-        # Move picture to forget folder
-        for savedir in cfg.gettuple('GENERAL', 'directory', 'path'):
-            forgetdir = osp.join(savedir, "forget")
-            if not osp.isdir(forgetdir):
-                os.makedirs(forgetdir)
+        forget_previous_picture(cfg, app)
+        _show_forget_message(win)
+        # Draw the wait screen and set the LEDs again, without the picture
+        app.forget_redraw = True
 
-            src = osp.join(savedir, osp.basename(app.previous_picture_file))
-            dst = osp.join(forgetdir, osp.basename(app.previous_picture_file))
 
-            if osp.exists(src):
-                os.rename(src, dst)
-                LOGGER.info("Moved %s to forget folder", osp.basename(src))
-
-        # Update counters
-        app.count.forgotten += 1
-
-        # Clear the picture
-        app.previous_picture = None
-        app.previous_animated = None
-        app.previous_picture_file = None
+@pibooth.hookimpl
+def state_wait_validate(app):
+    """Enter the wait state again once the previous picture is forgotten."""
+    if getattr(app, 'forget_redraw', False):
+        app.forget_redraw = False
+        return 'wait'
