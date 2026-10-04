@@ -136,6 +136,28 @@ def state_print_exit(app):
         LOGGER.debug("Forget LED off")
 
 
+def forget_previous_picture(cfg, app):
+    """Move the previous picture to the forget folder of each save directory
+    and stop showing it."""
+    for savedir in cfg.gettuple('GENERAL', 'directory', 'path'):
+        forgetdir = osp.join(savedir, "forget")
+        if not osp.isdir(forgetdir):
+            os.makedirs(forgetdir)
+
+        src = osp.join(savedir, osp.basename(app.previous_picture_file))
+        dst = osp.join(forgetdir, osp.basename(app.previous_picture_file))
+
+        if osp.exists(src):
+            os.rename(src, dst)
+            LOGGER.info("Moved %s to forget folder", osp.basename(src))
+
+    app.count.forgotten += 1
+
+    app.previous_picture = None
+    app.previous_animated = None
+    app.previous_picture_file = None
+
+
 @pibooth.hookimpl
 def state_print_do(cfg, app, win, events):
     """Handle forget button press during print state."""
@@ -149,26 +171,7 @@ def state_print_do(cfg, app, win, events):
         if hasattr(app, 'forget_led') and app.forget_led:
             app.forget_led.off()
 
-        # Move picture to forget folder
-        for savedir in cfg.gettuple('GENERAL', 'directory', 'path'):
-            forgetdir = osp.join(savedir, "forget")
-            if not osp.isdir(forgetdir):
-                os.makedirs(forgetdir)
-
-            src = osp.join(savedir, osp.basename(app.previous_picture_file))
-            dst = osp.join(forgetdir, osp.basename(app.previous_picture_file))
-
-            if osp.exists(src):
-                os.rename(src, dst)
-                LOGGER.info("Moved %s to forget folder", osp.basename(src))
-
-        # Update counters
-        app.count.forgotten += 1
-
-        # Clear the picture
-        app.previous_picture = None
-        app.previous_animated = None
-        app.previous_picture_file = None
+        forget_previous_picture(cfg, app)
 
         # Prevent printing
         app.count.remaining_duplicates = 0
@@ -190,23 +193,4 @@ def state_wait_do(cfg, app, events):
         if hasattr(app, 'forget_led') and app.forget_led:
             app.forget_led.blink(on_time=0.1, n=3)
 
-        # Move picture to forget folder
-        for savedir in cfg.gettuple('GENERAL', 'directory', 'path'):
-            forgetdir = osp.join(savedir, "forget")
-            if not osp.isdir(forgetdir):
-                os.makedirs(forgetdir)
-
-            src = osp.join(savedir, osp.basename(app.previous_picture_file))
-            dst = osp.join(forgetdir, osp.basename(app.previous_picture_file))
-
-            if osp.exists(src):
-                os.rename(src, dst)
-                LOGGER.info("Moved %s to forget folder", osp.basename(src))
-
-        # Update counters
-        app.count.forgotten += 1
-
-        # Clear the picture
-        app.previous_picture = None
-        app.previous_animated = None
-        app.previous_picture_file = None
+        forget_previous_picture(cfg, app)
