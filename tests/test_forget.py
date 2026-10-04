@@ -30,8 +30,10 @@ def app(savedir):
 
 
 @pytest.fixture(autouse=True)
-def no_message(monkeypatch):
-    monkeypatch.setattr(plugin, '_show_forget_message', lambda win: None)
+def messages(monkeypatch):
+    shown = []
+    monkeypatch.setattr(plugin, '_show_forget_message', shown.append)
+    return shown
 
 
 def press():
@@ -47,14 +49,22 @@ def assert_forgotten(app, savedir):
 
 
 def test_wait_screen_forgets_the_previous_picture(cfg, app, savedir):
-    plugin.state_wait_do(cfg, app, press())
+    plugin.state_wait_do(cfg, app, None, press())
 
     assert_forgotten(app, savedir)
     assert app.count.remaining_duplicates == 0  # The print LED and icon go off
 
 
+def test_wait_screen_confirms_the_forget(cfg, app, messages):
+    win = object()
+
+    plugin.state_wait_do(cfg, app, win, press())
+
+    assert messages == [win]
+
+
 def test_wait_screen_is_drawn_again_once(cfg, app):
-    plugin.state_wait_do(cfg, app, press())
+    plugin.state_wait_do(cfg, app, None, press())
 
     assert plugin.state_wait_validate(app) == 'wait'
     assert plugin.state_wait_validate(app) is None
@@ -68,7 +78,7 @@ def test_print_screen_forgets_the_picture_and_prevents_printing(cfg, app, savedi
 
 
 def test_nothing_happens_without_a_press(cfg, app, savedir):
-    plugin.state_wait_do(cfg, app, [])
+    plugin.state_wait_do(cfg, app, None, [])
 
     assert (savedir / PICTURE).exists()
     assert app.count.forgotten == 0
@@ -77,7 +87,7 @@ def test_nothing_happens_without_a_press(cfg, app, savedir):
 def test_nothing_happens_without_a_picture(cfg, app, savedir):
     app.previous_picture_file = None
 
-    plugin.state_wait_do(cfg, app, press())
+    plugin.state_wait_do(cfg, app, None, press())
 
     assert (savedir / PICTURE).exists()
     assert app.count.forgotten == 0

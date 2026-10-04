@@ -180,7 +180,7 @@ def state_print_do(cfg, app, win, events):
 
 
 @pibooth.hookimpl
-def state_wait_do(cfg, app, events):
+def state_wait_do(cfg, app, win, events):
     """Handle forget button press during wait state (to delete previous photo)."""
     if not hasattr(app, 'forget_button') or not app.forget_button:
         return
@@ -193,6 +193,7 @@ def state_wait_do(cfg, app, events):
             app.forget_led.blink(on_time=0.1, n=3)
 
         forget_previous_picture(cfg, app)
+        _show_forget_message(win)
         # Draw the wait screen and set the LEDs again, without the picture
         app.forget_redraw = True
 
